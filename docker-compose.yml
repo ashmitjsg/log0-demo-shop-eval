@@ -1,0 +1,57 @@
+# The demo shop: a Node (MERN) storefront, a Go payments service and a Rust inventory service, all
+# shipping their logs to log0. Copy .env.example to .env and set LOG0_URL and LOG0_API_KEY first.
+#
+#   docker compose up -d --build
+#   docker compose --profile sink up -d sink      # optional: a local stand-in for log0 that records what is shipped
+
+x-log0: &log0
+  LOG0_URL: ${LOG0_URL:-}
+  LOG0_API_KEY: ${LOG0_API_KEY:-}
+  LOG0_ENV: ${LOG0_ENV:-demo}
+  LOG0_MIN_LEVEL: ${LOG0_MIN_LEVEL:-WARN}
+
+services:
+  mongo:
+    image: mongo:7
+    ports: ["27018:27017"]
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand({ping:1}).ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  storefront-api:
+    build: ./services/storefront-api
+    ports: ["8090:8090"]
+    environment:
+      <<: *log0
+      LOG0_SERVICE: storefront-api
+      MONGO_URL: mongodb://mongo:27017
+      INVENTORY_URL: http://inventory:8091
+      PAYMENTS_URL: http://payments:8092
+    depends_on:
+      mongo: { condition: service_healthy }
+    restart: unless-stopped
+
+  inventory:
+    build: ./services/inventory
+    ports: ["8091:8091"]
+    environment:
+      <<: *log0
+      LOG0_SERVICE: inventory
+    restart: unless-stopped
+
+  payments:
+    build: ./services/payments
+    ports: ["8092:8092"]
+    environment:
+      <<: *log0
+      LOG0_SERVICE: payments
+      CHAOS: "1" # lets the load scripts switch the fake payment gateway's failure modes
+      GATEWAY_API_KEY: sk_live_demo_0123456789abcdef
+    restart: unless-stopped
+
+  sink:
+    profiles: ["sink"]
+    build: ./tools/sink
+    ports: ["8099:8099"]

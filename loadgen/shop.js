@@ -56,15 +56,15 @@ const scenarios = {
     check(http.get(`${STORE}/cart/${id}`), { "cart ok": (r) => r.status === 200 });
   },
 
-  // B3: someone orders more than is in stock
+  // B3: someone orders more than is in stock (3 left)
   oversell() {
-    const res = checkout("SKU-1038", 50);
+    const res = checkout("SKU-1038", 4);
     check(res, { "refused cleanly": (r) => r.status === 409 });
   },
 
   // B4: a big order (at least $100), which the payments service protects against double charging
   bigOrder() {
-    const res = checkout("SKU-1030", 3);
+    const res = checkout("SKU-1003", 14);
     check(res, { "checkout ok": (r) => r.status === 201 });
   },
 

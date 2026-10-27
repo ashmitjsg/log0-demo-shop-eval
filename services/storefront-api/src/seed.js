@@ -3,7 +3,7 @@
 export const SKUS = Array.from({ length: 40 }, (_, i) => `SKU-${1001 + i}`);
 
 export function catalog() {
-  return SKUS.map((sku, i) => ({ sku, name: `Product ${i + 1}`, priceCents: 500 + i * 125 }));
+  return SKUS.map((sku, i) => ({ sku, name: `Product ${i + 1}`, priceCents: 500 + (i % 8) * 125 }));
 }
 
 export async function seed(db, { orderCount = 60000 } = {}) {

@@ -9,7 +9,7 @@ export function priceCart(items, catalog) {
   if (!items.length) throw new Error("cart is empty");
   const bySku = new Map(catalog.map((p) => [p.sku, p]));
   const lines = items.map((item) => {
-    const product = bySku.get(normalizeSku(item.sku));
+    const product = bySku.get(item.sku);
     if (!product) throw new Error(`unknown sku ${item.sku}`);
     return { sku: product.sku, qty: item.qty, unitPriceCents: product.priceCents, totalCents: product.priceCents * item.qty };
   });

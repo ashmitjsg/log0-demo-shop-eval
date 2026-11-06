@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import express from "express";
-import { charge, OutOfStockError, releaseStock, reserveStock } from "./clients.js";
-import { error, info, warn } from "./log0.js";
+import { charge, releaseStock, reserveStock } from "./clients.js";
+import { error, info } from "./log0.js";
 import { normalizeSku, priceCart } from "./pricing.js";
 
 /** Build the Express app around a Mongo database handle (injected so tests can pass a fake). */
@@ -75,15 +75,8 @@ export function createApp(db) {
       const catalog = await products.find({}).toArray();
       const priced = priceCart(cart.items ?? [], catalog);
 
-      try {
-        await reserveStock(orderId, priced.lines);
-      } catch (err) {
-        if (err instanceof OutOfStockError) {
-          warn(`checkout refused: ${err.message}`);
-          return res.status(409).json({ error: err.message });
-        }
-        throw err;
-      }
+      // the reservation runs alongside the payment, so checkout is not slowed down by inventory
+      reserveStock(orderId, priced.lines);
 
       const payment = await charge(orderId, priced.totalCents, `${cartId}:${priced.totalCents}`);
       if (!payment.ok) {

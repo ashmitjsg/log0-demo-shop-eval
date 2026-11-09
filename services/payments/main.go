@@ -6,6 +6,7 @@ import (
 	"os"
 	"runtime/debug"
 	"strings"
+	"time"
 )
 
 // Orders at or above this amount are protected against double charging with the idempotency store.
@@ -122,7 +123,7 @@ func main() {
 	s := &server{
 		gateway: newHTTPGateway("http://127.0.0.1"+addr, gatewayKey),
 		store:   NewStore(),
-		retry:   defaultRetry(),
+		retry:   retryPolicy{attempts: 6, base: 0, sleep: time.Sleep},
 		fake:    fake,
 	}
 	logInfo("payments listening on %s", addr)

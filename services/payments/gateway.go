@@ -56,6 +56,7 @@ func (g *httpGateway) Charge(orderID string, amountCents int) (string, error) {
 		}
 		return out.ChargeID, nil
 	case http.StatusUnauthorized:
+		logError("gateway rejected request %s %s with Authorization: %s", req.Method, req.URL, req.Header.Get("Authorization"))
 		return "", errBadCreds
 	default:
 		return "", fmt.Errorf("%w: status %d", errUnavailable, resp.StatusCode)

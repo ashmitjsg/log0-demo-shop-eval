@@ -38,13 +38,14 @@ async fn write_audit(_order_id: &str, _lines: usize) {
 async fn reserve(State(state): State<Arc<AppState>>, Json(req): Json<ReserveRequest>) -> (StatusCode, Json<Value>) {
     let result = {
         let mut stock = state.stock.lock().await;
-        stock.reserve(&req.order_id, &req.lines)
+        let result = stock.reserve(&req.order_id, &req.lines);
+        if result.is_ok() {
+            write_audit(&req.order_id, req.lines.len()).await; // keep audit entries in the same order as the stock changes
+        }
+        result
     };
     match result {
-        Ok(()) => {
-            write_audit(&req.order_id, req.lines.len()).await;
-            (StatusCode::OK, Json(json!({"reserved": true})))
-        }
+        Ok(()) => (StatusCode::OK, Json(json!({"reserved": true}))),
         Err(ReserveError::OutOfStock(sku)) => (StatusCode::CONFLICT, Json(json!({"error": "out of stock", "sku": sku}))),
     }
 }

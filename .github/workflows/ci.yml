@@ -1,0 +1,40 @@
+name: ci
+
+# The demo shop's own tests, so log0's draft pull requests have a result to report.
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  payments:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: services/payments/go.mod
+      - run: go vet ./... && go test ./...
+        working-directory: services/payments
+
+  storefront-api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci && npm test
+        working-directory: services/storefront-api
+
+  inventory:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: services/inventory
+      - run: cargo test
+        working-directory: services/inventory
